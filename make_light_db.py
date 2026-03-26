@@ -5,49 +5,60 @@ from datetime import datetime, timedelta
 SRC = "data/jquants_prices.db"
 DST = "data/jquants_prices_light.db"
 
+# 既存ファイル削除
 if os.path.exists(DST):
     os.remove(DST)
 
-conn_src = sqlite3.connect(SRC)
-conn_dst = sqlite3.connect(DST)
-
-# 直近1年分
-from_date = (datetime.today() - timedelta(days=365)).strftime("%Y%m%d")
+# 直近1年（必要なら730に変更）
+from_date = (datetime.today() - timedelta(days=365)).strftime("%Y-%m-%d")
 print(f"{from_date} 以降を抽出")
 
-# コピー先テーブル作成
-conn_dst.execute("""
-CREATE TABLE prices (
-    code TEXT,
-    date TEXT,
-    close REAL
-)
+conn = sqlite3.connect(DST)
+
+# 元DBをアタッチ
+conn.execute(f"ATTACH DATABASE '{SRC}' AS src")
+
+# --- pricesテーブル（必要列だけ）---
+conn.execute("""
+CREATE TABLE prices AS
+SELECT
+    code,
+    date,
+    open,
+    high,
+    low,
+    close,
+    volume,
+    adjustment_factor,
+    adj_close
+FROM src.prices
+WHERE date >= ?
+""", (from_date,))
+
+# --- masterテーブル（そのままコピー）---
+conn.execute("""
+CREATE TABLE master AS
+SELECT *
+FROM src.master
 """)
 
-# コピー元から取得
-rows = conn_src.execute("""
-SELECT code, date, close
-FROM prices
-WHERE date >= ?
-""", (from_date,)).fetchall()
+# インデックス（高速化）
+conn.execute("CREATE INDEX idx_prices_code_date ON prices(code, date)")
+conn.execute("CREATE INDEX idx_master_code ON master(code)")
+conn.execute("CREATE INDEX idx_master_search_code ON master(search_code)")
 
-print(f"抽出予定件数: {len(rows):,}")
+conn.commit()
 
-# コピー先へ挿入
-conn_dst.executemany("""
-INSERT INTO prices (code, date, close)
-VALUES (?, ?, ?)
-""", rows)
+# サイズ圧縮
+conn.execute("VACUUM")
 
-conn_dst.commit()
+# 確認
+cnt = conn.execute("SELECT COUNT(*) FROM prices").fetchone()[0]
+print(f"prices件数: {cnt:,}")
 
-# 圧縮
-conn_dst.execute("VACUUM")
+tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+print("テーブル一覧:", tables)
 
-cnt = conn_dst.execute("SELECT COUNT(*) FROM prices").fetchone()[0]
-print(f"件数: {cnt:,}")
+conn.close()
 
-conn_src.close()
-conn_dst.close()
-
-print("軽量DB完成")
+print("軽量DB完成（master込み）")
