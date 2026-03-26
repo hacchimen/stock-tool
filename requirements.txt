@@ -1,0 +1,6 @@
+streamlit
+pandas
+python-dateutil
+jquants-api-client
+openpyxl
+reportlab
