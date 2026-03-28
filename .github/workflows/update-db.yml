@@ -1,0 +1,44 @@
+name: Update stock DB monthly
+
+on:
+  schedule:
+    - cron: '0 0 3 * *'
+  workflow_dispatch:
+
+jobs:
+  update-db:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install jquants-api-client
+
+      - name: Run DB update
+        env:
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+        run: |
+          python build_jquants_db.py
+          python make_light_db.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/jquants_prices.db
+          git add data/jquants_prices_light.db
+          git add make_light_db.py
+          git diff --cached --quiet || git commit -m "Auto update DB (monthly)"
+          git push
