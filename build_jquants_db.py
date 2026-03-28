@@ -14,9 +14,12 @@ import jquantsapi
 # =========================================================
 # 設定
 # =========================================================
-API_KEY = "bo_gGUaExz0kiGNnhD3LX3INwn36Lce2jOcISJaWp1c"
-DB_PATH = os.path.join("data", "jquants_prices.db")
+API_KEY = os.getenv("JQUANTS_API_KEY")
 
+if not API_KEY:
+    raise ValueError("JQUANTS_API_KEY が設定されていません")
+
+DB_PATH = os.path.join("data", "jquants_prices.db")
 YEARS_BACK = 5
 
 # 429対策
@@ -165,7 +168,7 @@ def mark_fetched(conn: sqlite3.Connection, chunk_start: str, chunk_end: str, row
 # J-Quants
 # =========================================================
 def get_client() -> jquantsapi.ClientV2:
-    if not API_KEY or API_KEY == "ここにあなたのAPIキーを入れる":
+    return jquantsapi.ClientV2(api_key=API_KEY)
         raise ValueError("API_KEY を設定してください。")
     return jquantsapi.ClientV2(api_key=API_KEY)
 
