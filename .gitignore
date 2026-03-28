@@ -1,1 +1,3 @@
 data/jquants_prices.db
+__pycache__/
+*.pyc
