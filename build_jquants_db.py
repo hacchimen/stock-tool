@@ -169,9 +169,6 @@ def mark_fetched(conn: sqlite3.Connection, chunk_start: str, chunk_end: str, row
 # =========================================================
 def get_client() -> jquantsapi.ClientV2:
     return jquantsapi.ClientV2(api_key=API_KEY)
-        raise ValueError("API_KEY を設定してください。")
-    return jquantsapi.ClientV2(api_key=API_KEY)
-
 
 def fetch_master_df(cli: jquantsapi.ClientV2) -> pd.DataFrame:
     df = None
