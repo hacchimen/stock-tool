@@ -459,6 +459,11 @@ def build_pdf_bytes(report_text: str) -> bytes:
 st.title("株価評価ツール")
 st.caption("相続税評価業務向け / 保存済み株価データ参照版")
 st.caption("免責事項・利用規約は左サイドバーの各ページをご確認ください。")
+st.info(
+    "株価データは毎月3日に更新予定です。\n"
+    "当月中の株価データは翌月3日以降に反映されます。\n"
+    "実務に使用する際は、必要に応じて最新データをご確認ください。"
+)
 
 if not os.path.exists(DB_PATH):
     st.error("DBファイルがありません。先に build_jquants_db.py を実行してください。")
